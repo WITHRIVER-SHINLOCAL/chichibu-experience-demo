@@ -83,8 +83,9 @@ async function main() {
 
   console.log("[deploy-migrate-seed] デモ用データを投入します...");
   await sql.begin(async (tx) => {
-    // 投入順に依存しないよう、一時的に外部キー制約チェックを無効化する。
-    await tx`SET session_replication_role = replica`;
+    // TABLES配列は依存関係の順（親テーブル→子テーブル）に並べてあるため、
+    // 外部キー制約チェックを無効化しなくても順番どおり投入すればよい。
+    // （Renderの管理DBユーザーはsession_replication_roleの変更権限を持たないため）
     for (const table of TABLES) {
       const rows = fixture[table] ?? [];
       if (rows.length === 0) {
@@ -118,7 +119,6 @@ async function main() {
       }
       console.log(`  ${table}: ${rows.length}件`);
     }
-    await tx`SET session_replication_role = DEFAULT`;
   });
 
   console.log("[deploy-migrate-seed] 完了しました。");
